@@ -1,0 +1,13 @@
+# 共通
+python-dotenv>=1.0.0
+
+# activity_db
+supabase>=2.0.0
+
+# x_platform (Phase 2で追加)
+google-generativeai>=0.3.2
+tweepy>=4.14.0
+
+# note_platform (Phase 3で追加)
+selenium>=4.0.0
+webdriver-manager>=4.0.0
