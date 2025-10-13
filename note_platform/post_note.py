@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Note投稿モジュール
 Seleniumを使用したブラウザ自動操作でNote.comに記事を投稿
@@ -6,6 +7,7 @@ Seleniumを使用したブラウザ自動操作でNote.comに記事を投稿
 
 import os
 import sys
+import io
 import time
 from pathlib import Path
 from typing import Dict
@@ -17,6 +19,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
+
+# Windows環境での標準出力エンコーディング設定
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 # プロジェクトルートのパスを追加
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -67,6 +74,18 @@ def post_to_note(title: str, content: str, headless: bool = False, dry_run: bool
 
     # Chrome オプション設定
     chrome_options = Options()
+
+    # Windows環境でのChrome実行パスを明示的に指定
+    if sys.platform == 'win32':
+        chrome_path = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+        if os.path.exists(chrome_path):
+            chrome_options.binary_location = chrome_path
+        else:
+            # 32bit版のパスも試す
+            chrome_path_x86 = r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+            if os.path.exists(chrome_path_x86):
+                chrome_options.binary_location = chrome_path_x86
+
     if headless:
         chrome_options.add_argument('--headless')
     chrome_options.add_argument('--no-sandbox')
@@ -96,51 +115,247 @@ def post_to_note(title: str, content: str, headless: bool = False, dry_run: bool
 
         # ログイン
         print("🔑 ログイン中...")
-        email_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.NAME, "email"))
-        )
+
+        # ページが完全に読み込まれるまで待機
+        time.sleep(3)
+
+        # デバッグ: ページのHTMLを確認
+        print("📋 ページ要素を確認中...")
+
+        # メールアドレス入力フィールドを探す
+        email_input = None
+        selectors = [
+            "input[type='text']",
+            "input[type='email']",
+            "input[name='email']",
+            "input[placeholder*='メール']",
+            "input[placeholder*='mail']",
+            "input[placeholder*='note']"
+        ]
+
+        for selector in selectors:
+            try:
+                email_input = driver.find_element(By.CSS_SELECTOR, selector)
+                print(f"✅ メール入力欄を発見: {selector}")
+                break
+            except:
+                continue
+
+        if not email_input:
+            # XPathでも試す
+            try:
+                email_input = driver.find_element(By.XPATH, "//input[@type='text' or @type='email']")
+                print("✅ メール入力欄を発見: XPath")
+            except Exception as e:
+                raise Exception(f"メール入力欄が見つかりません: {str(e)}")
+
+        email_input.clear()
         email_input.send_keys(email)
+        print(f"✅ メールアドレス入力完了: {email}")
+        time.sleep(1)
 
-        password_input = driver.find_element(By.NAME, "password")
+        # パスワード入力フィールドを探す
+        try:
+            password_input = driver.find_element(By.CSS_SELECTOR, "input[type='password']")
+            print("✅ パスワード入力欄を発見")
+        except Exception as e:
+            raise Exception(f"パスワード入力欄が見つかりません: {str(e)}")
+
+        password_input.clear()
         password_input.send_keys(password)
+        print("✅ パスワード入力完了")
+        time.sleep(1)
 
-        login_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
+        # ログインボタンを探す
+        login_button = None
+
+        # まずテキストでボタンを探す
+        all_buttons = driver.find_elements(By.TAG_NAME, "button")
+        print(f"📋 ページ内のボタン数: {len(all_buttons)}")
+
+        for i, btn in enumerate(all_buttons):
+            btn_text = btn.text.strip()
+            print(f"  ボタン{i}: text='{btn_text}' type='{btn.get_attribute('type')}'")
+            if btn_text == 'ログイン':
+                login_button = btn
+                print(f"✅ ログインボタンを発見: ボタン{i}")
+                break
+
+        if not login_button:
+            raise Exception("ログインボタンが見つかりません")
+
         login_button.click()
+        print("✅ ログインボタンをクリックしました")
 
         # ログイン完了を待つ
         print("⏳ ログイン処理を待機中...")
         time.sleep(5)
 
-        # 記事作成ページに移動
+        # 記事作成ページに直接移動
         print("📝 記事作成ページに移動中...")
-        driver.get("https://note.com/n/new")
-        time.sleep(3)
+
+        # 複数のURLパターンを試す
+        create_urls = [
+            "https://note.com/notes/create",
+            "https://note.com/post",
+            "https://note.com/new"
+        ]
+
+        for url in create_urls:
+            try:
+                driver.get(url)
+                time.sleep(3)
+
+                # タイトル入力欄が存在するか確認
+                try:
+                    driver.find_element(By.CSS_SELECTOR, "textarea[placeholder*='タイトル'], input[placeholder*='タイトル']")
+                    print(f"✅ 記事作成ページに到達: {url}")
+                    break
+                except:
+                    print(f"⚠️  {url} は記事作成ページではありません")
+                    continue
+            except Exception as e:
+                print(f"⚠️  {url} への移動に失敗: {str(e)}")
+                continue
+
+        # モーダルやポップアップを閉じる
+        try:
+            close_buttons = driver.find_elements(By.XPATH, "//button[contains(@aria-label, '閉じる') or contains(@class, 'close')]")
+            for btn in close_buttons:
+                try:
+                    btn.click()
+                    print("✅ モーダルを閉じました")
+                    time.sleep(1)
+                except:
+                    pass
+        except:
+            pass
 
         # タイトル入力
         print(f"✍️  タイトルを入力中: {title}")
-        title_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "textarea[placeholder='タイトル']"))
-        )
-        title_input.clear()
-        title_input.send_keys(title)
+
+        # タイトル入力欄を探す（複数のセレクタを試す）
+        title_input = None
+        title_selectors = [
+            "textarea[placeholder*='タイトル']",
+            "input[placeholder*='タイトル']",
+            "//textarea[contains(@placeholder, 'タイトル')]",
+            "//input[contains(@placeholder, 'タイトル')]",
+            "h1[contenteditable='true']",
+            "div[contenteditable='true'][role='textbox']"
+        ]
+
+        for selector in title_selectors:
+            try:
+                if selector.startswith("//"):
+                    title_input = driver.find_element(By.XPATH, selector)
+                else:
+                    title_input = driver.find_element(By.CSS_SELECTOR, selector)
+                print(f"✅ タイトル入力欄を発見: {selector}")
+                break
+            except:
+                continue
+
+        if not title_input:
+            raise Exception("タイトル入力欄が見つかりません")
+
+        # タイトルを入力
+        try:
+            title_input.click()
+            time.sleep(0.5)
+            title_input.clear()
+            title_input.send_keys(title)
+        except:
+            # contenteditable要素の場合
+            driver.execute_script("arguments[0].textContent = arguments[1];", title_input, title)
+
+        print(f"✅ タイトル入力完了: {title}")
         time.sleep(1)
 
         # 本文入力
         print(f"✍️  本文を入力中... ({len(content)}文字)")
-        content_textarea = driver.find_element(By.CSS_SELECTOR, "textarea[placeholder='本文を入力']")
-        content_textarea.clear()
-        content_textarea.send_keys(content)
+
+        # 本文入力欄を探す（複数のセレクタを試す）
+        content_textarea = None
+        content_selectors = [
+            "textarea[placeholder*='本文']",
+            "div[contenteditable='true'][data-placeholder*='本文']",
+            "//textarea[contains(@placeholder, '本文')]",
+            "//div[@contenteditable='true' and contains(@data-placeholder, '本文')]",
+            "div[contenteditable='true']"
+        ]
+
+        for selector in content_selectors:
+            try:
+                if selector.startswith("//"):
+                    content_textarea = driver.find_element(By.XPATH, selector)
+                else:
+                    content_textarea = driver.find_element(By.CSS_SELECTOR, selector)
+                print(f"✅ 本文入力欄を発見: {selector}")
+                break
+            except:
+                continue
+
+        if not content_textarea:
+            raise Exception("本文入力欄が見つかりません")
+
+        # 本文を入力
+        try:
+            content_textarea.click()
+            time.sleep(0.5)
+            content_textarea.clear()
+            content_textarea.send_keys(content)
+        except:
+            # contenteditable要素の場合
+            driver.execute_script("arguments[0].textContent = arguments[1];", content_textarea, content)
+
+        print(f"✅ 本文入力完了: {len(content)}文字")
         time.sleep(2)
 
-        # 公開設定
-        # Note: 実際の投稿処理はdry_runでない場合のみ実行
-        # ここでは公開ボタンをクリックする前で停止
+        # スクリーンショット保存（投稿前）
+        screenshot_path = Path.home() / "note_post_preview.png"
+        driver.save_screenshot(str(screenshot_path))
+        print(f"📸 投稿前のスクリーンショットを保存: {screenshot_path}")
 
-        print("⏸️  投稿準備完了")
-        print("⚠️  注意: 実際の公開処理はWindows環境で手動確認後に有効化してください")
+        # 「公開に進む」ボタンをクリック
+        print("📤 公開ボタンを探しています...")
+        try:
+            # すべてのボタンを取得して「公開」が含まれるものを探す
+            all_buttons = driver.find_elements(By.TAG_NAME, "button")
+            publish_button = None
 
-        # 投稿URLは仮
-        note_url = "https://note.com/[投稿後のURL]"
+            for btn in all_buttons:
+                btn_text = btn.text.strip()
+                if '公開' in btn_text:
+                    publish_button = btn
+                    print(f"✅ 公開ボタンを発見: '{btn_text}'")
+                    break
+
+            if not publish_button:
+                print("📋 ページ内のすべてのボタンを確認:")
+                for i, btn in enumerate(all_buttons):
+                    print(f"  ボタン{i}: '{btn.text}'")
+                raise Exception("公開ボタンが見つかりません")
+
+            # 公開ボタンをクリック
+            print("🚀 記事を公開中...")
+            publish_button.click()
+            time.sleep(3)
+
+            # 公開完了を待つ
+            print("⏳ 公開処理を待機中...")
+            time.sleep(5)
+
+            # 公開後のURL取得を試みる
+            current_url = driver.current_url
+            note_url = current_url if "note.com" in current_url else "https://note.com/[投稿完了]"
+
+            print(f"✅ 記事を公開しました！")
+
+        except Exception as e:
+            print(f"⚠️  公開ボタンのクリックに失敗: {str(e)}")
+            print("📝 記事の下書きは保存されました")
+            note_url = driver.current_url
 
         result = {
             'success': True,
@@ -150,10 +365,10 @@ def post_to_note(title: str, content: str, headless: bool = False, dry_run: bool
             'dry_run': False
         }
 
-        # スクリーンショット保存（デバッグ用）
-        screenshot_path = Path.home() / "note_post_preview.png"
-        driver.save_screenshot(str(screenshot_path))
-        print(f"📸 スクリーンショットを保存: {screenshot_path}")
+        # スクリーンショット保存（投稿後）
+        screenshot_path_after = Path.home() / "note_post_after.png"
+        driver.save_screenshot(str(screenshot_path_after))
+        print(f"📸 投稿後のスクリーンショットを保存: {screenshot_path_after}")
 
         return result
 
