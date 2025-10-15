@@ -6,8 +6,14 @@ List Activities CLI
 """
 
 import sys
+import io
 import argparse
 from db import ActivityDB
+
+# Windows環境でのUTF-8対応
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 
 def main():

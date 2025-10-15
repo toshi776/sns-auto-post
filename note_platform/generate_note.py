@@ -6,10 +6,16 @@ Gemini APIを使用して、活動内容から詳細なNote記事を生成
 
 import os
 import sys
+import io
 from pathlib import Path
 from typing import Dict
 from dotenv import load_dotenv
 import google.generativeai as genai
+
+# Windows環境でのUTF-8対応
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # プロジェクトルートのパスを追加
 sys.path.insert(0, str(Path(__file__).parent.parent))
