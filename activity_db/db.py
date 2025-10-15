@@ -37,7 +37,7 @@ class ActivityDB:
         注意: SupabaseのWeb UIまたはSQLエディタで以下を実行してください：
 
         CREATE TABLE activities (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            id VARCHAR(5) PRIMARY KEY,
             timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             content TEXT NOT NULL,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -58,7 +58,7 @@ class ActivityDB:
             print("\nSupabase Web UIで以下のSQLを実行してください:")
             print("""
 CREATE TABLE activities (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id VARCHAR(5) PRIMARY KEY,
     timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     content TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -67,6 +67,33 @@ CREATE TABLE activities (
 CREATE INDEX idx_activities_timestamp ON activities(timestamp DESC);
             """)
             return False
+
+    def _get_next_id(self) -> str:
+        """
+        次のIDを取得（5桁の連番）
+
+        Returns:
+            str: 次のID（例: '00001'）
+        """
+        try:
+            # 最大IDを取得
+            result = self.client.table(self.table_name)\
+                .select("id")\
+                .order("id", desc=True)\
+                .limit(1)\
+                .execute()
+
+            if result.data and len(result.data) > 0:
+                max_id = int(result.data[0]['id'])
+                next_id = max_id + 1
+            else:
+                next_id = 1
+
+            return str(next_id).zfill(5)
+
+        except Exception as e:
+            print(f"❌ 次のIDの取得に失敗: {e}")
+            raise
 
     def add_activity(self, content: str, timestamp: Optional[str] = None) -> Dict:
         """
@@ -82,7 +109,11 @@ CREATE INDEX idx_activities_timestamp ON activities(timestamp DESC);
         if not content or not content.strip():
             raise ValueError("活動内容は必須です")
 
+        # 次のIDを取得
+        next_id = self._get_next_id()
+
         data = {
+            "id": next_id,
             "content": content.strip(),
         }
 
@@ -108,7 +139,7 @@ CREATE INDEX idx_activities_timestamp ON activities(timestamp DESC);
         ID指定で活動情報を取得
 
         Args:
-            activity_id: 活動ID（UUID）
+            activity_id: 活動ID（5桁数字、例: '00001'）
 
         Returns:
             Optional[Dict]: 活動情報、存在しない場合None

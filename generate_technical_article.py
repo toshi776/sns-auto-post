@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Note記事生成モジュール
-Gemini APIを使用して、活動内容から詳細なNote記事を生成
+技術記事生成モジュール（Qiita/Zenn用）
+Gemini APIを使用して、活動内容から技術記事を生成
 """
 
 import os
@@ -18,19 +18,18 @@ if sys.platform == 'win32':
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # プロジェクトルートのパスを追加
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent))
 
 # 環境変数読み込み
 load_dotenv()
 
 
-def generate_note_article(activity_content: str, style: str = "technical") -> Dict[str, str]:
+def generate_technical_article(activity_content: str) -> Dict[str, str]:
     """
-    活動内容からNote記事を生成
+    活動内容から技術記事を生成（Qiita/Zenn向け）
 
     Args:
         activity_content: 活動内容
-        style: 記事のスタイル（"technical": 技術記事、"casual": カジュアル、"tutorial": チュートリアル）
 
     Returns:
         Dict[str, str]: {'title': タイトル, 'content': 本文}
@@ -75,14 +74,14 @@ def generate_note_article(activity_content: str, style: str = "technical") -> Di
 {activity_content}
 
 
-上記のベース記事を、noteに最適化してください。
+上記のベース記事を、QiitaやZennに最適化してください。
 
 ### 調整方針
-- casual寄りに修正
-- 読者が「読み物」として楽しめるように背景や学びを強調
-- 専門性は残すが、ストーリーや体験談を追加して親しみやすい文体に
-- 絵文字を1〜2個程度、文脈に合わせて自然に入れてもよい
-- 技術的な正確さは保持しつつも、Qiita/Zennより柔らかいトーンで
+- technical/tutorial寄りに修正
+- 文体は客観的かつ簡潔に（ですます調よりも常体ベース）
+- 背景やストーリーよりも「手順」「コード」「再現性」を優先
+- 見出しやコード例は明確に整理
+- SEOを意識してキーワード（技術名・バージョン）を多めに残す
 
 ### 出力フォーマット
 以下の形式で出力してください：
@@ -121,7 +120,7 @@ CONTENT:
             }
 
     except Exception as e:
-        raise Exception(f"Note記事の生成に失敗しました: {str(e)}")
+        raise Exception(f"技術記事の生成に失敗しました: {str(e)}")
 
 
 def main():
@@ -129,13 +128,12 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description='活動内容からNote記事を生成',
+        description='活動内容から技術記事を生成（Qiita/Zenn向け）',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 使用例:
-  python generate_note.py "今日はPythonでAPIを実装しました"
-  python generate_note.py "新しいプロジェクト開始" --style casual
-  python generate_note.py "初心者向けチュートリアル" --style tutorial
+  python generate_technical_article.py "今日はPythonでAPIを実装しました"
+  python generate_technical_article.py "新しいプロジェクト開始"
         """
     )
 
@@ -144,27 +142,19 @@ def main():
         help='活動内容'
     )
 
-    parser.add_argument(
-        '--style',
-        choices=['technical', 'casual', 'tutorial'],
-        default='technical',
-        help='記事のスタイル（デフォルト: technical）'
-    )
-
     args = parser.parse_args()
 
     try:
-        print(f"🤖 Gemini APIでNote記事を生成中...")
+        print(f"🤖 Gemini APIで技術記事を生成中...")
         print(f"📝 活動内容: {args.content}")
-        print(f"🎨 スタイル: {args.style}")
         print()
 
         # 記事生成
-        article = generate_note_article(args.content, args.style)
+        article = generate_technical_article(args.content)
 
         # 結果表示
         print("=" * 80)
-        print("✅ Note記事が生成されました")
+        print("✅ 技術記事が生成されました（Qiita/Zenn向け）")
         print("=" * 80)
         print()
         print(f"【タイトル】")
