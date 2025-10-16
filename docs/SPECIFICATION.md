@@ -47,7 +47,7 @@ Note投稿プログラム実行
 #### activities テーブル
 ```sql
 CREATE TABLE activities (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id VARCHAR(5) PRIMARY KEY,
     timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     content TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -60,11 +60,69 @@ CREATE INDEX idx_activities_timestamp ON activities(timestamp DESC);
 ### データ構造（JSON表現）
 ```json
 {
-    "id": "uuid-string",
+    "id": "00001",
     "timestamp": "2025-01-12T10:30:00+09:00",
     "content": "活動内容の本文",
     "created_at": "2025-01-12T10:30:00+09:00"
 }
+```
+
+### ID形式変更（2025-10-13）
+
+**変更内容**
+- **変更前**: UUID形式（例: `a1b2c3d4-e5f6-7890-abcd-ef1234567890`）
+- **変更後**: 5桁数字形式（例: `00001`, `00002`, ...）
+- **対応範囲**: 最大99,999件まで対応可能
+
+**変更理由**
+- IDの可読性向上
+- コマンドライン操作の簡便化
+- URL短縮
+
+**マイグレーション手順**
+
+Supabase Web UI > SQL Editorで以下を順番に実行：
+
+#### Step 1: 新しいテーブル作成
+```sql
+CREATE TABLE activities_new (
+    id VARCHAR(5) PRIMARY KEY,
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_activities_new_timestamp ON activities_new(timestamp DESC);
+```
+
+#### Step 2: 既存データを新IDで移行
+```sql
+INSERT INTO activities_new (id, timestamp, content, created_at)
+SELECT
+    LPAD(ROW_NUMBER() OVER (ORDER BY timestamp ASC)::TEXT, 5, '0') as id,
+    timestamp,
+    content,
+    created_at
+FROM activities
+ORDER BY timestamp ASC;
+```
+
+#### Step 3: テーブルの入れ替え
+```sql
+-- 古いテーブルをバックアップ
+ALTER TABLE activities RENAME TO activities_old;
+
+-- 新しいテーブルを本番に
+ALTER TABLE activities_new RENAME TO activities;
+
+-- 確認後、古いテーブルを削除（任意）
+-- DROP TABLE activities_old;
+```
+
+**ロールバック方法**
+```sql
+DROP TABLE activities;
+ALTER TABLE activities_old RENAME TO activities;
 ```
 
 ### 容量管理
