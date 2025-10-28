@@ -56,5 +56,12 @@ temp/
 
 # スクリーンショット
 note_post_preview.png
+note_post_after.png
 note_post_error.png
 *.png
+
+# 一時ファイル・スクリプト
+cleanup.py
+WORK_LOG.md
+TODO.md
+TOMORROW.md

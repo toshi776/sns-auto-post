@@ -1,88 +1,66 @@
-# X Platform モジュール
+# X投稿システム
 
-Gemini APIを使った投稿文生成とTwitter APIを使ったX投稿を管理するモジュール
+X (Twitter) に投稿するための独立したサブシステム
+
+## 概要
+
+外部から渡された文章をX (Twitter) に投稿します。完全に独立したモジュールで、他のシステムに依存しません。
 
 ## 機能
 
-1. **投稿文生成** (`generate_x.py`)
-   - Gemini APIで魅力的なX投稿文を自動生成
-   - 活動内容から280文字以内の投稿文を作成
-   - ハッシュタグと絵文字を自動挿入
-
-2. **X投稿** (`post_x.py`)
-   - Twitter API v2でXに投稿
-   - Dry runモードでテスト可能
-   - 投稿URLの自動取得
+- Tweepy (Twitter API v2) を使用してXに投稿
+- Dry runモードでテスト実行
+- コマンドライン/Python関数の両方で利用可能
 
 ## セットアップ
 
-### 1. 環境変数設定
-
-`.env`ファイルに以下を追加：
+### 1. 依存ライブラリのインストール
 
 ```bash
-# Gemini API
-GEMINI_API_KEY=your_gemini_api_key
+cd x_platform
+pip install -r requirements.txt
+```
 
-# X API（Twitter）
+### 2. 環境変数の設定
+
+プロジェクトルートの `.env` ファイルに以下を設定：
+
+```bash
 X_API_KEY=your_api_key
 X_API_SECRET=your_api_secret
 X_ACCESS_TOKEN=your_access_token
 X_ACCESS_TOKEN_SECRET=your_access_token_secret
 ```
 
-### 2. APIキーの取得
+### 3. X API キーの取得方法
 
-#### Gemini API
-1. https://makersuite.google.com/app/apikey にアクセス
-2. 「Get API Key」をクリック
-3. APIキーをコピーして`.env`に追加
-
-#### X (Twitter) API
 1. https://developer.x.com/ にアクセス
 2. プロジェクトとアプリを作成
 3. API Key & Secret, Access Token & Secret を取得
-4. `.env`に追加
+4. アプリに「Read and Write」権限を付与
+5. `.env`に追加
 
 ## 使い方
 
-### 投稿文生成
+### コマンドラインから実行
 
 ```bash
-# 基本的な使い方
-python x_platform/generate_x.py "今日はPythonでAPIを実装しました"
+# 通常投稿
+python post_x.py "投稿する文章"
 
-# 文字数制限を指定
-python x_platform/generate_x.py "新しいプロジェクト開始" --max-length 140
-```
-
-**出力例：**
-```
-============================================================
-✅ X投稿文が生成されました
-============================================================
-今日はPython×API実装で進捗バリバリ💻✨
-
-コード書くの楽しすぎる🚀
-明日も頑張るぞー！
-
-#Python #API開発
-============================================================
-📊 文字数: 67/280
-```
-
-### X投稿
-
-```bash
 # Dry runモード（実際には投稿しない）
-python x_platform/post_x.py "テスト投稿" --dry-run
-
-# 実際に投稿
-python x_platform/post_x.py "Hello, X!"
+python post_x.py "テスト投稿" --dry-run
 ```
 
-**出力例（実投稿）：**
-```
+**実行例：**
+```bash
+$ python post_x.py "Hello, X!"
+📤 Xに投稿中...
+📝 投稿内容:
+------------------------------------------------------------
+Hello, X!
+------------------------------------------------------------
+
 ============================================================
 ✅ Xに投稿しました
 ============================================================
@@ -91,93 +69,81 @@ python x_platform/post_x.py "Hello, X!"
 📊 文字数: 9
 ```
 
-## 統合ワークフロー例
-
-Activity DBと組み合わせて使う：
-
-```bash
-# 1. 活動を記録
-python activity_db/add_activity.py "Phase 2のX投稿機能を実装完了"
-
-# 2. 最新活動を取得して投稿文生成
-ACTIVITY=$(python activity_db/list_activities.py --latest | grep "内容:" | cut -d: -f2-)
-python x_platform/generate_x.py "$ACTIVITY" > post.txt
-
-# 3. 生成された文章を投稿
-python x_platform/post_x.py "$(cat post.txt)"
-```
-
-## モジュールとして使用
-
-Pythonコードから直接呼び出す：
+### Pythonコードから呼び出し
 
 ```python
-from x_platform import generate_x_post, post_to_x
+from x_platform.post_x import post_to_x
 
-# 投稿文生成
-activity = "今日はPythonで新機能を実装しました"
-post_text = generate_x_post(activity, max_length=280)
-
-# X投稿（Dry runモード）
-result = post_to_x(post_text, dry_run=True)
-print(result)
-
-# 実際に投稿
-result = post_to_x(post_text, dry_run=False)
+# 投稿
+result = post_to_x("投稿する文章")
 print(f"投稿URL: {result['url']}")
+
+# Dry run
+result = post_to_x("テスト投稿", dry_run=True)
 ```
+
+## レスポンス形式
+
+```python
+{
+    'success': True,          # 成功/失敗
+    'tweet_id': '...',       # ツイートID (成功時のみ)
+    'url': 'https://...',    # ツイートURL (成功時のみ)
+    'text': '投稿した文章',
+    'dry_run': False         # Dry runモードかどうか
+}
+```
+
+## 注意事項
+
+- Twitter API v2を使用します
+- API利用には Twitter Developer アカウントが必要です
+- 投稿は最大280文字までです
+- API制限: Free tier は月間1,500ツイート、17投稿/15分
 
 ## エラーハンドリング
 
 ### よくあるエラー
 
-**1. `GEMINI_API_KEYを.envに設定してください`**
-- `.env`ファイルにGEMINI_API_KEYを追加してください
-
-**2. `X API認証情報を.envに設定してください`**
+**1. `X API認証情報を.envに設定してください`**
 - `.env`ファイルにX APIの4つの認証情報を追加してください
 
-**3. `TweepyException: 403 Forbidden`**
+**2. `TweepyException: 403 Forbidden`**
 - X APIの権限設定を確認してください
 - アプリに「Read and Write」権限が必要です
 
-**4. `生成された文章が280文字を超えています`**
-- 自動的に切り詰められますが、`--max-length`で調整可能です
-
-## API使用制限
-
-### Gemini API
-- 無料枠: 15 RPM (Requests Per Minute)
-- 月間制限: 60 RPM
-
-### X API (Free tier)
-- 月間投稿数: 1,500ツイート
-- レート制限: 17投稿/15分
+**3. `TweepyException: 429 Too Many Requests`**
+- レート制限に達しています。しばらく待ってから再試行してください
 
 ## ファイル構成
 
 ```
 x_platform/
 ├── __init__.py         # モジュール初期化
-├── generate_x.py       # Gemini APIで投稿文生成
-├── post_x.py           # Twitter APIでX投稿
+├── post_x.py           # X投稿機能
+├── requirements.txt    # 依存ライブラリ
 └── README.md           # 本ファイル
 ```
 
-## 次のステップ
+## ワークフロー例
 
-Phase 3では、Note投稿機能を実装予定：
-- `note_platform/` モジュール
-- Selenium自動操作でNote投稿
-- Gemini APIで記事本文生成
+ChatGPTで生成した文章を投稿：
+
+```bash
+# 1. ChatGPTで文章を生成（手動またはAPI経由）
+# 文章をファイルに保存
+echo "今日はPythonでAPIを実装しました 🚀" > tweet.txt
+
+# 2. X投稿システムで投稿
+python x_platform/post_x.py "$(cat tweet.txt)"
+```
 
 ## トラブルシューティング
 
 問題が発生した場合は、以下を確認してください：
 
 1. `.env`ファイルが正しく設定されているか
-2. APIキーが有効か
-3. インターネット接続が正常か
-4. API使用制限に達していないか
-
-詳細は [SPECIFICATION.md](../SPECIFICATION.md) を参照してください。
+2. APIキーが有効か（X Developer Portalで確認）
+3. アプリに「Read and Write」権限があるか
+4. インターネット接続が正常か
+5. API使用制限に達していないか
