@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from x_platform.post_x import post_to_x
 from note_platform.post_note import post_to_note
+from gemini_formatter import GeminiFormatter
 
 
 def read_text_file(file_path: str) -> str:
@@ -121,7 +122,8 @@ def post_to_all_platforms(
     note_title: str = None,
     note_content: str = None,
     dry_run: bool = False,
-    note_headless: bool = False
+    note_headless: bool = False,
+    use_gemini: bool = False
 ):
     """
     すべてのプラットフォームに投稿
@@ -132,11 +134,40 @@ def post_to_all_platforms(
         note_content: Note投稿用の本文（Noneの場合はスキップ）
         dry_run: Trueの場合、実際には投稿しない
         note_headless: Noteをヘッドレスモードで実行
+        use_gemini: Trueの場合、Gemini APIで文章を整形
 
     Returns:
         dict: 各プラットフォームの投稿結果
     """
     results = {}
+
+    # Gemini APIで整形
+    if use_gemini:
+        try:
+            print("=" * 80)
+            print("🤖 Gemini APIで投稿内容を整形中...")
+            print("=" * 80)
+            formatter = GeminiFormatter()
+            formatted = formatter.format_all(
+                x_text=x_text,
+                note_title=note_title,
+                note_content=note_content
+            )
+
+            # 整形結果を反映
+            if formatted['x_text']:
+                x_text = formatted['x_text']
+            if formatted['note_title']:
+                note_title = formatted['note_title']
+            if formatted['note_content']:
+                note_content = formatted['note_content']
+
+            print("✅ 整形完了")
+            print()
+        except Exception as e:
+            print(f"⚠️  Gemini整形に失敗: {e}")
+            print("   元の文章で投稿を続行します...")
+            print()
 
     # X投稿
     if x_text:
@@ -279,6 +310,11 @@ def main():
         action='store_true',
         help='実際には投稿せず、シミュレーションのみ'
     )
+    parser.add_argument(
+        '--use-gemini',
+        action='store_true',
+        help='Gemini APIで投稿内容を各プラットフォームに適した形式に整形'
+    )
 
     args = parser.parse_args()
 
@@ -342,6 +378,8 @@ def main():
     print("=" * 80)
     if args.dry_run:
         print("🔍 [DRY RUN MODE] 実際には投稿しません")
+    if args.use_gemini:
+        print("🤖 [GEMINI MODE] Gemini APIで文章を整形します")
     print()
 
     try:
@@ -351,7 +389,8 @@ def main():
             note_title=note_title,
             note_content=note_content,
             dry_run=args.dry_run,
-            note_headless=args.note_headless
+            note_headless=args.note_headless,
+            use_gemini=args.use_gemini
         )
 
         # 結果サマリー

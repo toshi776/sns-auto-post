@@ -1,6 +1,9 @@
 # 共通
 python-dotenv>=1.0.0
 
+# Gemini API（文章整形機能）
+google-generativeai>=0.3.0
+
 # X投稿システム (x_platform)
 tweepy>=4.14.0
 
