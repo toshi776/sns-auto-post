@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git pull:*)",
+      "Bash(git reset:*)",
+      "Bash(git checkout:*)",
+      "Bash(python main.py:*)",
+      "Bash(py main.py --post-file \"posts/post.txt\")",
+      "Bash(python3:*)",
+      "Bash(where:*)",
+      "Bash(C:UserstoshiAppDataLocalMicrosoftWindowsAppspython.exe main.py --post-file \"posts/post.txt\")",
+      "Bash(\"C:\\Users\\toshi\\AppData\\Local\\Microsoft\\WindowsApps\\python.exe\" main.py --post-file \"posts/post.txt\")",
+      "Bash(powershell -Command:*)",
+      "Bash(cmd /c \"python --version 2>&1\")",
+      "Bash(cmd /c \"python main.py --post-file posts/post.txt\")",
+      "Read(//c/Users/toshi/AppData/Local/Programs/**)",
+      "Bash(python.exe --version:*)",
+      "Bash(python -m pip install:*)",
+      "Read(//c/Users/toshi/**)",
+      "WebSearch",
+      "WebFetch(domain:www.help-note.com)",
+      "WebFetch(domain:note.com)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
