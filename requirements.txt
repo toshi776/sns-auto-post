@@ -10,3 +10,4 @@ tweepy>=4.14.0
 # Note投稿システム (note_platform) - Windows環境のみ
 selenium>=4.15.0
 webdriver-manager>=4.0.1
+pyperclip>=1.8.0

@@ -9,6 +9,7 @@ import os
 import sys
 import io
 import time
+import pyperclip
 from pathlib import Path
 from typing import Dict
 from dotenv import load_dotenv
@@ -300,31 +301,31 @@ def post_to_note(title: str, content: str, headless: bool = False, dry_run: bool
         if not content_textarea:
             raise Exception("本文入力欄が見つかりません")
 
-        # 本文を行ごとに入力（Markdown記法を認識させるため）
+        # クリップボード経由で本文を入力（絵文字対応）
         try:
             content_textarea.click()
             time.sleep(0.5)
             content_textarea.clear()
 
-            # 行ごとに分割して入力
-            lines = content.split('\n')
-            print(f"   📝 {len(lines)}行を入力中...")
+            # クリップボードにコピー
+            print(f"   📋 クリップボードにコピー中...")
+            pyperclip.copy(content)
 
-            for i, line in enumerate(lines):
-                if i > 0:  # 2行目以降はEnterキーで改行
-                    content_textarea.send_keys(Keys.RETURN)
-                    time.sleep(0.05)  # Noteが記法を認識する時間を確保
+            # Ctrl+Vで貼り付け（Windows/Linux）またはCmd+V（Mac）
+            print(f"   📝 貼り付け中...")
+            if sys.platform == 'darwin':
+                # Mac: Cmd+V
+                content_textarea.send_keys(Keys.COMMAND, 'v')
+            else:
+                # Windows/Linux: Ctrl+V
+                content_textarea.send_keys(Keys.CONTROL, 'v')
 
-                content_textarea.send_keys(line)
-
-                # 進捗表示（100行ごと）
-                if (i + 1) % 100 == 0:
-                    print(f"   ... {i + 1}/{len(lines)}行")
+            time.sleep(1)  # 貼り付け完了を待つ
 
         except Exception as e:
-            print(f"⚠️  行ごとの入力に失敗: {e}")
-            print("   フォールバック: 一括入力を試みます...")
-            # contenteditable要素の場合（フォールバック）
+            print(f"⚠️  クリップボード貼り付けに失敗: {e}")
+            print("   フォールバック: JavaScript経由で入力を試みます...")
+            # JavaScript経由で入力（フォールバック）
             try:
                 driver.execute_script("arguments[0].textContent = arguments[1];", content_textarea, content)
             except Exception as e2:
