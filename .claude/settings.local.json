@@ -20,7 +20,13 @@
       "WebSearch",
       "WebFetch(domain:www.help-note.com)",
       "WebFetch(domain:note.com)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git log:*)",
+      "Bash(git config:*)",
+      "Bash(git push:*)",
+      "Bash(python -m pip:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []
