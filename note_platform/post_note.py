@@ -360,22 +360,190 @@ def post_to_note(title: str, content: str, headless: bool = False, dry_run: bool
                 raise Exception("公開ボタンが見つかりません")
 
             # 公開ボタンをクリック
-            print("🚀 記事を公開中...")
+            print("🚀 ステップ1: 「公開に進む」ボタンをクリック...")
             publish_button.click()
+            time.sleep(3)
+
+            # 公開設定画面が表示される
+            print("📋 ステップ2: 公開設定画面を確認中...")
+            time.sleep(2)  # 画面遷移を待つ
+
+            # ハッシュタグを自動選択
+            print("🏷️  提案されたハッシュタグを選択中...")
+            try:
+                # ハッシュタグボタンを取得（CSSセレクタで#から始まるボタン、またはハッシュタグを含むボタン）
+                hashtag_buttons = driver.find_elements(By.XPATH, "//button[starts-with(., '#')]")
+
+                if hashtag_buttons:
+                    selected_tags = []
+                    for btn in hashtag_buttons:
+                        try:
+                            tag_text = btn.text.strip()
+                            if tag_text and btn.is_displayed():
+                                btn.click()
+                                selected_tags.append(tag_text)
+                                time.sleep(0.3)  # クリック間隔
+
+                                # コンテスト詳細モーダルが開いた場合は閉じる
+                                # Escapeキーを押してモーダルを閉じる（より確実）
+                                try:
+                                    time.sleep(0.5)  # モーダルが開くのを待つ
+                                    from selenium.webdriver.common.action_chains import ActionChains
+                                    actions = ActionChains(driver)
+                                    actions.send_keys(Keys.ESCAPE).perform()
+                                    print(f"   ℹ️  コンテスト詳細モーダルを閉じました（Escape）")
+                                    time.sleep(0.5)
+                                except:
+                                    pass
+
+                        except Exception as btn_error:
+                            # 個別のボタンクリックに失敗しても続行
+                            pass
+
+                    if selected_tags:
+                        print(f"✅ ハッシュタグを選択しました: {', '.join(selected_tags)}")
+                    else:
+                        print("ℹ️  選択可能なハッシュタグが見つかりませんでした")
+                else:
+                    print("ℹ️  提案されたハッシュタグがありません")
+
+            except Exception as hashtag_error:
+                print(f"ℹ️  ハッシュタグ選択をスキップ: {hashtag_error}")
+
+            print("   （記事タイプ: 無料）")
+
+            # 公開設定画面の「投稿する」ボタンを探す
+            time.sleep(1)
+
+            all_buttons_settings = driver.find_elements(By.TAG_NAME, "button")
+            final_publish_button = None
+
+            for btn in all_buttons_settings:
+                btn_text = btn.text.strip()
+                # 「投稿する」ボタンを探す
+                if btn_text == '投稿する':
+                    # 表示されているボタンのみ対象
+                    if btn.is_displayed():
+                        final_publish_button = btn
+                        print(f"✅ 「投稿する」ボタンを発見")
+                        break
+
+            if not final_publish_button:
+                print("⚠️  「投稿する」ボタンが見つかりません")
+                print("📋 公開設定画面のすべてのボタン:")
+                for i, btn in enumerate(all_buttons_settings):
+                    if btn.is_displayed():
+                        print(f"  ボタン{i}: '{btn.text}'")
+                raise Exception("「投稿する」ボタンが見つかりません")
+
+            # 「投稿する」ボタンをクリック
+            print("🚀 ステップ3: 「投稿する」ボタンをクリックして本番公開...")
+            final_publish_button.click()
             time.sleep(3)
 
             # 公開完了を待つ
             print("⏳ 公開処理を待機中...")
             time.sleep(5)
 
-            # 公開後のURL取得を試みる
-            current_url = driver.current_url
-            note_url = current_url if "note.com" in current_url else "https://note.com/[投稿完了]"
+            # シェアモーダルが表示されるので閉じる
+            print("📋 ステップ4: シェアモーダルを閉じて記事URLに遷移中...")
+            try:
+                # シェアモーダルの×ボタンを探す
+                close_buttons = driver.find_elements(By.XPATH, "//button[@aria-label='閉じる' or contains(@class, 'close')]")
+                share_modal_closed = False
 
-            print(f"✅ 記事を公開しました！")
+                for close_btn in close_buttons:
+                    try:
+                        if close_btn.is_displayed():
+                            print("   ✅ シェアモーダルの×ボタンを発見")
+                            close_btn.click()
+                            share_modal_closed = True
+                            time.sleep(2)
+                            break
+                    except:
+                        pass
+
+                # ×ボタンが見つからない場合はEscapeキーで閉じる
+                if not share_modal_closed:
+                    print("   ℹ️  Escapeキーでシェアモーダルを閉じます")
+                    from selenium.webdriver.common.action_chains import ActionChains
+                    actions = ActionChains(driver)
+                    actions.send_keys(Keys.ESCAPE).perform()
+                    time.sleep(2)
+
+                print("   ✅ シェアモーダルを閉じました")
+            except Exception as share_error:
+                print(f"   ℹ️  シェアモーダルのクローズをスキップ: {share_error}")
+
+            # URLの遷移を待つ
+            time.sleep(2)
+
+            # 現在のURLを確認（記事URLが取得できる場合がある）
+            current_url = driver.current_url
+            print(f"📍 公開後のURL: {current_url}")
+
+            # 記事URLを取得
+            note_url = None
+            note_username = os.getenv('NOTE_USERNAME', '')
+
+            # ケース1: editor.note.com/notes/{note_id}/publish/ の形式の場合
+            if "editor.note.com/notes/" in current_url and "/publish/" in current_url:
+                # 記事IDを抽出
+                import re
+                match = re.search(r'/notes/(n[a-zA-Z0-9]+)/', current_url)
+                if match and note_username:
+                    note_id = match.group(1)
+                    # 公開記事のURLを生成
+                    note_url = f"https://note.com/{note_username}/n/{note_id}"
+                    print(f"✅ 記事を公開しました！")
+                    print(f"📍 公開URL: {note_url}")
+                else:
+                    print(f"ℹ️  記事IDは取得できましたが、ユーザー名が設定されていません")
+
+            # ケース2: URLに記事IDが含まれている場合（既に公開記事のURL）
+            elif "/n" in current_url and "note.com" in current_url and "editor.note.com" not in current_url:
+                note_url = current_url.split('?')[0]  # クエリパラメータを除去
+                print(f"✅ 記事を公開しました！")
+                print(f"📍 公開URL: {note_url}")
+
+            # ケース2: URLから記事IDが取得できない場合、プロフィールページから取得
+            else:
+                print("📋 ステップ4: 記事URLを取得中...")
+
+                # NOTE_USERNAMEを環境変数から取得（オプション）
+                note_username = os.getenv('NOTE_USERNAME', '')
+
+                if note_username:
+                    try:
+                        # ユーザーのプロフィールページに移動
+                        profile_url = f"https://note.com/{note_username}"
+                        print(f"   プロフィールページに移動: {profile_url}")
+                        driver.get(profile_url)
+                        time.sleep(3)
+
+                        # 最新の記事リンクを取得
+                        article_links = driver.find_elements(By.CSS_SELECTOR, f"a[href*='/{note_username}/n']")
+                        if article_links:
+                            # 最初のリンク（最新記事）のhrefを取得
+                            latest_article_url = article_links[0].get_attribute('href')
+                            if latest_article_url and '/n' in latest_article_url:
+                                note_url = latest_article_url.split('?')[0]  # クエリパラメータを除去
+                                print(f"✅ 記事を公開しました！")
+                                print(f"📍 公開URL: {note_url}")
+                        else:
+                            print(f"ℹ️  プロフィールページから記事URLを取得できませんでした")
+                    except Exception as profile_error:
+                        print(f"ℹ️  プロフィールページからの取得に失敗: {profile_error}")
+
+                # URLが取得できなかった場合
+                if not note_url:
+                    print(f"✅ 記事の公開が完了しました！")
+                    print(f"📍 記事はNote.comのマイページから確認できます: https://note.com/my/notes")
+                    # フォールバック: マイページのURLを返す
+                    note_url = "https://note.com/my/notes"
 
         except Exception as e:
-            print(f"⚠️  公開ボタンのクリックに失敗: {str(e)}")
+            print(f"⚠️  公開処理中にエラー: {str(e)}")
             print("📝 記事の下書きは保存されました")
             note_url = driver.current_url
 

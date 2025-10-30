@@ -80,23 +80,28 @@ def parse_post_file(file_path: str) -> dict:
         section_content = []
 
         for line in content.split('\n'):
-            # セクション見出しをチェック
-            if line.strip() == '[X]':
+            # セクション見出しをチェック（[で始まり]で終わる行）
+            stripped_line = line.strip()
+
+            if stripped_line.startswith('[') and stripped_line.endswith(']'):
                 # 前のセクションを保存
                 if current_section:
                     result[current_section] = '\n'.join(section_content).strip()
-                current_section = 'x_text'
-                section_content = []
-            elif line.strip() == '[Note Title]':
-                if current_section:
-                    result[current_section] = '\n'.join(section_content).strip()
-                current_section = 'note_title'
-                section_content = []
-            elif line.strip() == '[Note Content]':
-                if current_section:
-                    result[current_section] = '\n'.join(section_content).strip()
-                current_section = 'note_content'
-                section_content = []
+
+                # 認識するセクション見出しのみ処理
+                if stripped_line == '[X]':
+                    current_section = 'x_text'
+                    section_content = []
+                elif stripped_line == '[Note Title]':
+                    current_section = 'note_title'
+                    section_content = []
+                elif stripped_line == '[Note Content]':
+                    current_section = 'note_content'
+                    section_content = []
+                else:
+                    # 認識しないセクション見出し（[Qiita/Zenn Title]など）が来たら終了
+                    current_section = None
+                    section_content = []
             else:
                 # セクションの内容
                 if current_section:
