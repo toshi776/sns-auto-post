@@ -1,0 +1,34 @@
+[Qiita Title]
+Qiita API v2を使ったPythonからの自動投稿
+
+[Qiita Content]
+# はじめに
+
+Qiita API v2を使って、Pythonから記事を自動投稿するシステムを作成しました。
+
+## 特徴
+
+- Qiita API v2を使用
+- マークダウン形式で記事を記述
+- タグの自動設定
+- 限定共有記事の投稿にも対応
+
+## 使い方
+
+```python
+from qiita_platform.post_qiita import post_to_qiita
+
+result = post_to_qiita(
+    title="記事のタイトル",
+    content="記事の本文（マークダウン）",
+    tags=["Python", "API"],
+    private=False
+)
+```
+
+## まとめ
+
+Qiita APIを使うことで、記事の自動投稿が簡単に実現できました。
+
+[Qiita Tags]
+Python, API, Qiita, 自動化

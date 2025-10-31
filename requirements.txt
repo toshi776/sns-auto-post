@@ -1,5 +1,6 @@
 # 共通
 python-dotenv>=1.0.0
+requests>=2.31.0
 
 # Gemini API（文章整形機能）
 google-generativeai>=0.3.0
@@ -11,3 +12,6 @@ tweepy>=4.14.0
 selenium>=4.15.0
 webdriver-manager>=4.0.1
 pyperclip>=1.8.0
+
+# Qiita投稿システム (qiita_platform)
+# requests>=2.31.0 (共通に含まれる)

@@ -1,0 +1,47 @@
+[Zenn Title]
+Zennへの自動投稿をPythonで実装してみた
+
+[Zenn Content]
+# はじめに
+
+PythonとSeleniumを使って、Zennへの自動投稿システムを作成しました。
+
+## 背景
+
+技術記事を複数のプラットフォームに投稿するのは手間がかかります。そこで、自動投稿システムを構築することにしました。
+
+## 実装方法
+
+### 使用技術
+
+- Python 3.10+
+- Selenium
+- WebDriver Manager
+
+### コード例
+
+```python
+from zenn_platform.post_zenn import post_to_zenn
+
+result = post_to_zenn(
+    title="記事のタイトル",
+    content="記事の本文（マークダウン）",
+    emoji="📝",
+    topics=["Python", "Selenium"],
+    published=True
+)
+```
+
+## まとめ
+
+Seleniumを使うことで、Zennへの自動投稿が実現できました。
+
+## 参考
+
+- [Zenn公式ドキュメント](https://zenn.dev/)
+
+[Zenn Emoji]
+📝
+
+[Zenn Topics]
+Python, Selenium, 自動化
