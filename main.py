@@ -16,6 +16,7 @@ from x_platform.post_x import post_to_x
 from note_platform.post_note import post_to_note
 from qiita_platform.post_qiita import post_to_qiita
 from zenn_platform.post_zenn import post_to_zenn
+from zenn_platform.post_zenn_github import post_to_zenn_github
 from gemini_formatter import GeminiFormatter
 
 
@@ -205,6 +206,9 @@ def post_to_all_platforms(
     zenn_emoji: str = None,
     zenn_topics: list = None,
     zenn_published: bool = True,
+    zenn_type: str = "tech",
+    zenn_slug: str = None,
+    zenn_use_github: bool = False,
     dry_run: bool = False,
     note_headless: bool = False,
     zenn_headless: bool = False,
@@ -227,9 +231,12 @@ def post_to_all_platforms(
         zenn_emoji: Zenn投稿用の絵文字アイコン（デフォルト: 📝）
         zenn_topics: Zenn投稿用のトピックリスト（Noneの場合は空リスト）
         zenn_published: Zennを公開記事として投稿（Falseで下書き）
+        zenn_type: Zenn記事タイプ（"tech" or "idea"、デフォルト: "tech"）
+        zenn_slug: Zenn記事のスラッグ（省略時は自動生成）
+        zenn_use_github: TrueでGitHub連携方式、FalseでSelenium方式
         dry_run: Trueの場合、実際には投稿しない
         note_headless: Noteをヘッドレスモードで実行
-        zenn_headless: Zennをヘッドレスモードで実行
+        zenn_headless: Zennをヘッドレスモードで実行（Selenium方式のみ）
         use_gemini: Trueの場合、Gemini APIで文章を整形
 
     Returns:
@@ -340,24 +347,44 @@ def post_to_all_platforms(
     # Zenn投稿
     if zenn_title and zenn_content:
         print("=" * 80)
-        print("⚡ Zenn に投稿中...")
+        if zenn_use_github:
+            print("⚡ Zenn に投稿中（GitHub連携方式）...")
+        else:
+            print("⚡ Zenn に投稿中（Selenium方式）...")
         print("=" * 80)
         try:
-            zenn_result = post_to_zenn(
-                title=zenn_title,
-                content=zenn_content,
-                emoji=zenn_emoji if zenn_emoji else "📝",
-                topics=zenn_topics,
-                published=zenn_published,
-                headless=zenn_headless,
-                dry_run=dry_run
-            )
+            if zenn_use_github:
+                # GitHub連携方式
+                zenn_result = post_to_zenn_github(
+                    title=zenn_title,
+                    content=zenn_content,
+                    emoji=zenn_emoji if zenn_emoji else "📝",
+                    article_type=zenn_type,
+                    topics=zenn_topics,
+                    published=zenn_published,
+                    slug=zenn_slug,
+                    dry_run=dry_run
+                )
+            else:
+                # Selenium方式
+                zenn_result = post_to_zenn(
+                    title=zenn_title,
+                    content=zenn_content,
+                    emoji=zenn_emoji if zenn_emoji else "📝",
+                    topics=zenn_topics,
+                    published=zenn_published,
+                    headless=zenn_headless,
+                    dry_run=dry_run
+                )
             results['zenn'] = zenn_result
 
             if zenn_result['dry_run']:
                 print("✅ Zenn投稿 [DRY RUN] 完了")
             else:
-                print(f"✅ Zenn投稿完了: {zenn_result['url']}")
+                if zenn_use_github:
+                    print(f"✅ Zenn投稿完了（GitHub連携）: {zenn_result.get('file_path', 'N/A')}")
+                else:
+                    print(f"✅ Zenn投稿完了: {zenn_result['url']}")
         except Exception as e:
             results['zenn'] = {'success': False, 'error': str(e)}
             print(f"❌ Zenn投稿失敗: {e}")
@@ -549,7 +576,19 @@ def main():
         '--zenn-topics',
         type=str,
         nargs='+',
-        help='Zenn に投稿する記事のトピック（スペース区切り、例: Python API 自動化）'
+        help='Zenn に投稿する記事のトピック（スペース区切り、例: Python API 自動化、最大5個）'
+    )
+    parser.add_argument(
+        '--zenn-type',
+        type=str,
+        default='tech',
+        choices=['tech', 'idea'],
+        help='Zenn記事のタイプ（デフォルト: tech）'
+    )
+    parser.add_argument(
+        '--zenn-slug',
+        type=str,
+        help='Zenn記事のスラッグ（省略時は自動生成、12-50文字）'
     )
     parser.add_argument(
         '--zenn-draft',
@@ -557,9 +596,14 @@ def main():
         help='Zenn記事を下書きとして保存（公開しない）'
     )
     parser.add_argument(
+        '--zenn-github',
+        action='store_true',
+        help='ZennをGitHub連携方式で投稿（デフォルトはSelenium方式）'
+    )
+    parser.add_argument(
         '--zenn-headless',
         action='store_true',
-        help='Zennをヘッドレスモードで実行'
+        help='Zennをヘッドレスモードで実行（Selenium方式のみ）'
     )
 
     # 共通オプション
@@ -724,6 +768,9 @@ def main():
             zenn_emoji=zenn_emoji,
             zenn_topics=zenn_topics,
             zenn_published=not args.zenn_draft if hasattr(args, 'zenn_draft') else True,
+            zenn_type=args.zenn_type if hasattr(args, 'zenn_type') else 'tech',
+            zenn_slug=args.zenn_slug if hasattr(args, 'zenn_slug') else None,
+            zenn_use_github=args.zenn_github if hasattr(args, 'zenn_github') else False,
             dry_run=args.dry_run,
             note_headless=args.note_headless,
             zenn_headless=args.zenn_headless if hasattr(args, 'zenn_headless') else False,

@@ -120,6 +120,84 @@ Python, Selenium, 自動化
 
 ---
 
+---
+
+### 3. Zenn投稿機能（GitHub連携方式）✨ **実装完了** ✨
+
+#### 作成ファイル
+- `zenn_platform/post_zenn_github.py`: GitHub連携による投稿モジュール
+- `test_zenn_github.py`: 単体テストスクリプト
+
+#### 機能
+- ✅ ZennのGitHub連携機能を使用
+- ✅ マークダウンファイルにフロントマター自動付与
+- ✅ articlesディレクトリに記事ファイルを生成
+- ✅ スラッグの自動生成（タイトルから、または日時ベース）
+- ✅ Gitで自動コミット・プッシュ
+- ✅ 記事タイプの指定（tech/idea）
+- ✅ トピック（タグ）の設定（最大5個）
+- ✅ 公開/下書きの制御
+- ✅ dry-runモードでのテスト
+
+#### 認証方式
+- **必要な情報**: Zenn連携Gitリポジトリのローカルパス
+- **セットアップ手順**:
+  1. GitHubでリポジトリを作成
+  2. Zennでリポジトリを連携: https://zenn.dev/dashboard/deploys
+  3. ローカルにクローン: `git clone https://github.com/username/my-zenn-content`
+  4. .envに`ZENN_GITHUB_REPO_PATH`を設定
+
+```bash
+# .env設定
+ZENN_GITHUB_REPO_PATH=C:\path\to\your\zenn-repo
+```
+
+#### 使用例
+```bash
+# 統合ファイルで投稿（GitHub連携方式）
+python main.py --post-file "posts/zenn_test.txt" --zenn-github --dry-run
+
+# 個別オプションで投稿
+python main.py --zenn-title "タイトル" \
+               --zenn-content-file "content.md" \
+               --zenn-emoji "📝" \
+               --zenn-type tech \
+               --zenn-topics Python GitHub Zenn \
+               --zenn-github \
+               --dry-run
+
+# スラッグを指定して投稿
+python main.py --zenn-title "タイトル" \
+               --zenn-content-file "content.md" \
+               --zenn-slug "my-custom-article-2024" \
+               --zenn-github
+```
+
+#### 記事ファイル形式
+GitHub連携により、以下のような形式でマークダウンファイルが生成されます：
+
+```markdown
+---
+title: "記事のタイトル"
+emoji: "📝"
+type: "tech"
+topics: ["Python", "GitHub", "Zenn"]
+published: true
+---
+
+# はじめに
+記事の本文...
+```
+
+#### メリット
+- ✅ Googleアカウントのまま使える
+- ✅ 最も安定・安全（公式サポート）
+- ✅ バージョン管理ができる
+- ✅ ブラウザ操作不要（Selenium不要）
+- ✅ CIツールと統合可能
+
+---
+
 ## 🚨 重要: Zennログインの課題と解決方法
 
 ### 課題
@@ -145,7 +223,7 @@ Python, Selenium, 自動化
 
 ---
 
-#### 🔧 方法2: GitHub連携方式に変更（中級者向け）
+#### 🔧 方法2: GitHub連携方式に変更（中級者向け）✨ **実装完了** ✨
 
 Zennの公式機能「GitHub連携」を使用した自動投稿に実装を変更する。
 
@@ -417,5 +495,31 @@ $ python test_zenn.py
 
 ---
 
+## 📝 更新履歴
+
+### 2025-11-01 - Zenn GitHub連携方式の実装
+**実装内容**:
+- `zenn_platform/post_zenn_github.py` 新規作成
+- GitHub連携でZennに記事を投稿する機能を追加
+- main.pyにGitHub連携オプション（`--zenn-github`）を追加
+- スラッグ自動生成機能の実装
+- 記事タイプ（tech/idea）の選択機能
+- .env.exampleにGitHub連携設定例を追加
+- test_zenn_github.pyテストスクリプトを作成
+
+**新規コマンドラインオプション**:
+- `--zenn-github`: GitHub連携方式を使用
+- `--zenn-type`: 記事タイプを指定（tech/idea）
+- `--zenn-slug`: 記事のスラッグを指定
+
+**メリット**:
+- Googleアカウントでログインしているユーザーでも利用可能
+- Selenium不要で安定動作
+- 公式サポートの方法
+- バージョン管理が可能
+
+---
+
 **実装完了日**: 2025-11-01
 **実装者**: Claude (Anthropic)
+**最終更新日**: 2025-11-01 (Zenn GitHub連携方式追加)
