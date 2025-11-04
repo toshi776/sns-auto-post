@@ -75,3 +75,5 @@ zenn-content/
 # 不要なファイル
 nul
 =0.3.0
+*_output.txt
+note_platform/article*.txt
