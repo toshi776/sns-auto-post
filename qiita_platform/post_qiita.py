@@ -14,9 +14,10 @@ from typing import Dict, List, Optional
 from dotenv import load_dotenv
 
 # Windows環境での標準出力エンコーディング設定
-if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+# Note: Bashツールから実行する場合はコメントアウト
+# if sys.platform == 'win32':
+#     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+#     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 # プロジェクトルートのパスを追加
 sys.path.insert(0, str(Path(__file__).parent.parent))

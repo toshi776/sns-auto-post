@@ -9,6 +9,11 @@ import sys
 import argparse
 from pathlib import Path
 
+# Windows環境でのUTF-8出力設定（reconfigureを使用）
+if sys.platform == 'win32' and hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
 # プロジェクトルートをパスに追加
 sys.path.insert(0, str(Path(__file__).parent))
 
