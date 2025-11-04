@@ -65,3 +65,13 @@ cleanup.py
 WORK_LOG.md
 TODO.md
 TOMORROW.md
+test_*.py
+run_main.py
+simple_test.py
+
+# Zenn content（別リポジトリで管理）
+zenn-content/
+
+# 不要なファイル
+nul
+=0.3.0
