@@ -1,0 +1,35 @@
+[
+  {
+    "slug": "20251106-001",
+    "title": "自動投稿システムでindex.html更新テスト",
+    "description": "自動投稿システムでindex.html更新テストに関する記事",
+    "date": "2025-11-06",
+    "datetime": "2025-11-06",
+    "tags": []
+  },
+  {
+    "slug": "20250710-001",
+    "title": "Microsoft shares $500M in AI savings internally days after cutting 9,000 jobs",
+    "description": "Microsoftが社内でAIを活用して5億ドルのコスト削減を実現した事例。コールセンター業務の効率化に特に効果的で、地方企業にも応用可能な実践的なAI活用法として注目すべき",
+    "date": "2025-07-10",
+    "datetime": "2025-07-10",
+    "tags": [
+      "海外動向",
+      "Microsoft",
+      "DX",
+      "AI"
+    ]
+  },
+  {
+    "slug": "welcome",
+    "title": "技術ブログ開設のお知らせ",
+    "description": "toshi776技術ブログを開設しました。AI/DX技術の最新情報とビジネス活用事例をお届けします。",
+    "date": "2025-01-09",
+    "datetime": "2025-01-09",
+    "tags": [
+      "お知らせ",
+      "AI",
+      "DX"
+    ]
+  }
+]

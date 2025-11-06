@@ -22,6 +22,7 @@ from note_platform.post_note import post_to_note
 from qiita_platform.post_qiita import post_to_qiita
 from zenn_platform.post_zenn import post_to_zenn
 from zenn_platform.post_zenn_github import post_to_zenn_github
+from blog_platform.post_blog import post_to_blog
 from gemini_formatter import GeminiFormatter
 
 
@@ -87,13 +88,21 @@ def parse_post_file(file_path: str) -> dict:
     [Zenn Topics]
     Python, API, 自動化
 
+    [Blog Title]
+    ブログのタイトル
+
+    [Blog Content]
+    ブログの本文（HTML or マークダウン）
+    複数行もOK
+
     Args:
         file_path: 投稿ファイルのパス
 
     Returns:
         dict: {'x_text': str, 'note_title': str, 'note_content': str,
                'qiita_title': str, 'qiita_content': str, 'qiita_tags': List[str],
-               'zenn_title': str, 'zenn_content': str, 'zenn_emoji': str, 'zenn_topics': List[str]}
+               'zenn_title': str, 'zenn_content': str, 'zenn_emoji': str, 'zenn_topics': List[str],
+               'blog_title': str, 'blog_content': str}
               各値はNoneの可能性あり
 
     Raises:
@@ -112,7 +121,9 @@ def parse_post_file(file_path: str) -> dict:
             'zenn_title': None,
             'zenn_content': None,
             'zenn_emoji': None,
-            'zenn_topics': None
+            'zenn_topics': None,
+            'blog_title': None,
+            'blog_content': None
         }
 
         # セクションで分割
@@ -158,6 +169,12 @@ def parse_post_file(file_path: str) -> dict:
                     section_content = []
                 elif stripped_line == '[Zenn Topics]':
                     current_section = 'zenn_topics'
+                    section_content = []
+                elif stripped_line == '[Blog Title]':
+                    current_section = 'blog_title'
+                    section_content = []
+                elif stripped_line == '[Blog Content]':
+                    current_section = 'blog_content'
                     section_content = []
                 else:
                     # 認識しないセクション見出しが来たら終了
@@ -214,6 +231,9 @@ def post_to_all_platforms(
     zenn_type: str = "tech",
     zenn_slug: str = None,
     zenn_use_github: bool = False,
+    blog_title: str = None,
+    blog_content: str = None,
+    blog_status: str = "publish",
     dry_run: bool = False,
     note_headless: bool = False,
     zenn_headless: bool = False,
@@ -239,6 +259,9 @@ def post_to_all_platforms(
         zenn_type: Zenn記事タイプ（"tech" or "idea"、デフォルト: "tech"）
         zenn_slug: Zenn記事のスラッグ（省略時は自動生成）
         zenn_use_github: TrueでGitHub連携方式、FalseでSelenium方式
+        blog_title: ブログ投稿用のタイトル（Noneの場合はスキップ）
+        blog_content: ブログ投稿用の本文（Noneの場合はスキップ）
+        blog_status: ブログの投稿ステータス（"publish", "draft", "private"）
         dry_run: Trueの場合、実際には投稿しない
         note_headless: Noteをヘッドレスモードで実行
         zenn_headless: Zennをヘッドレスモードで実行（Selenium方式のみ）
@@ -397,6 +420,31 @@ def post_to_all_platforms(
     else:
         print("⏭️  Zenn投稿をスキップ（タイトルまたは本文が指定されていません）\n")
 
+    # ブログ投稿
+    if blog_title and blog_content:
+        print("=" * 80)
+        print("📰 自社ブログ (WordPress) に投稿中...")
+        print("=" * 80)
+        try:
+            blog_result = post_to_blog(
+                title=blog_title,
+                content=blog_content,
+                status=blog_status,
+                dry_run=dry_run
+            )
+            results['blog'] = blog_result
+
+            if blog_result['dry_run']:
+                print("✅ ブログ投稿 [DRY RUN] 完了")
+            else:
+                print(f"✅ ブログ投稿完了: {blog_result['url']}")
+        except Exception as e:
+            results['blog'] = {'success': False, 'error': str(e)}
+            print(f"❌ ブログ投稿失敗: {e}")
+        print()
+    else:
+        print("⏭️  ブログ投稿をスキップ（タイトルまたは本文が指定されていません）\n")
+
     return results
 
 
@@ -455,6 +503,13 @@ def main():
 
   [Zenn Topics]
   Python, API, 自動化
+
+  [Blog Title]
+  ブログのタイトル
+
+  [Blog Content]
+  ブログの本文（HTML or マークダウン）
+  複数行もOK
 
 注意:
   - テキストファイルは UTF-8 エンコーディングで保存してください
@@ -611,6 +666,35 @@ def main():
         help='Zennをヘッドレスモードで実行（Selenium方式のみ）'
     )
 
+    # ブログ投稿オプション（個別指定）
+    parser.add_argument(
+        '--blog-title',
+        type=str,
+        help='ブログに投稿する記事のタイトル'
+    )
+    parser.add_argument(
+        '--blog-title-file',
+        type=str,
+        help='ブログに投稿する記事のタイトルのファイルパス'
+    )
+    parser.add_argument(
+        '--blog-content',
+        type=str,
+        help='ブログに投稿する記事の本文（HTML or マークダウン）'
+    )
+    parser.add_argument(
+        '--blog-content-file',
+        type=str,
+        help='ブログに投稿する記事の本文のファイルパス'
+    )
+    parser.add_argument(
+        '--blog-status',
+        type=str,
+        default='publish',
+        choices=['publish', 'draft', 'private'],
+        help='ブログの投稿ステータス（デフォルト: publish）'
+    )
+
     # 共通オプション
     parser.add_argument(
         '--dry-run',
@@ -636,6 +720,8 @@ def main():
     zenn_content = None
     zenn_emoji = None
     zenn_topics = None
+    blog_title = None
+    blog_content = None
 
     try:
         # 統合投稿ファイルを使用する場合
@@ -652,6 +738,8 @@ def main():
             zenn_content = parsed['zenn_content']
             zenn_emoji = parsed['zenn_emoji']
             zenn_topics = parsed['zenn_topics']
+            blog_title = parsed['blog_title']
+            blog_content = parsed['blog_content']
 
             # 読み込んだ内容を表示
             if x_text:
@@ -674,6 +762,10 @@ def main():
                 print(f"  ✓ [Zenn Emoji] セクション: {zenn_emoji}")
             if zenn_topics:
                 print(f"  ✓ [Zenn Topics] セクション: {', '.join(zenn_topics)}")
+            if blog_title:
+                print(f"  ✓ [Blog Title] セクション: {len(blog_title)}文字")
+            if blog_content:
+                print(f"  ✓ [Blog Content] セクション: {len(blog_content)}文字")
 
         # 個別ファイル/テキスト指定の場合
         else:
@@ -738,15 +830,29 @@ def main():
             if args.zenn_topics:
                 zenn_topics = args.zenn_topics
 
+            # ブログのタイトル
+            if args.blog_title_file:
+                print(f"📄 ブログタイトルを読み込み: {args.blog_title_file}")
+                blog_title = read_text_file(args.blog_title_file)
+            elif args.blog_title:
+                blog_title = args.blog_title
+
+            # ブログの本文
+            if args.blog_content_file:
+                print(f"📄 ブログ本文を読み込み: {args.blog_content_file}")
+                blog_content = read_text_file(args.blog_content_file)
+            elif args.blog_content:
+                blog_content = args.blog_content
+
     except Exception as e:
         print(f"❌ ファイル読み込みエラー: {e}")
         sys.exit(1)
 
     # 少なくとも1つのプラットフォームが指定されているか確認
-    if not x_text and not (note_title and note_content) and not (qiita_title and qiita_content) and not (zenn_title and zenn_content):
+    if not x_text and not (note_title and note_content) and not (qiita_title and qiita_content) and not (zenn_title and zenn_content) and not (blog_title and blog_content):
         parser.error("少なくとも1つのプラットフォームの投稿内容を指定してください\n"
                      "  推奨: --post-file でセクション形式のファイルを指定\n"
-                     "  または: --x-text/--x-text-file または --note-title/--note-title-file & --note-content/--note-content-file または --qiita-title/--qiita-title-file & --qiita-content/--qiita-content-file または --zenn-title/--zenn-title-file & --zenn-content/--zenn-content-file")
+                     "  または: --x-text/--x-text-file または --note-title/--note-title-file & --note-content/--note-content-file または --qiita-title/--qiita-title-file & --qiita-content/--qiita-content-file または --zenn-title/--zenn-title-file & --zenn-content/--zenn-content-file または --blog-title/--blog-title-file & --blog-content/--blog-content-file")
 
     print("=" * 80)
     print("🚀 SNS自動投稿システム")
@@ -776,6 +882,9 @@ def main():
             zenn_type=args.zenn_type if hasattr(args, 'zenn_type') else 'tech',
             zenn_slug=args.zenn_slug if hasattr(args, 'zenn_slug') else None,
             zenn_use_github=args.zenn_github if hasattr(args, 'zenn_github') else False,
+            blog_title=blog_title,
+            blog_content=blog_content,
+            blog_status=args.blog_status if hasattr(args, 'blog_status') else 'publish',
             dry_run=args.dry_run,
             note_headless=args.note_headless,
             zenn_headless=args.zenn_headless if hasattr(args, 'zenn_headless') else False,
@@ -810,6 +919,12 @@ def main():
             print(f"Zenn: {status}")
             if results['zenn'].get('url'):
                 print(f"  URL: {results['zenn']['url']}")
+
+        if 'blog' in results:
+            status = "✅ 成功" if results['blog'].get('success') else "❌ 失敗"
+            print(f"Blog (WordPress): {status}")
+            if results['blog'].get('url'):
+                print(f"  URL: {results['blog']['url']}")
 
         print()
 

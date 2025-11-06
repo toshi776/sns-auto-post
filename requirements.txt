@@ -15,3 +15,7 @@ pyperclip>=1.8.0
 
 # Qiita投稿システム (qiita_platform)
 # requests>=2.31.0 (共通に含まれる)
+
+# ブログ投稿システム (blog_platform) - 静的サイト生成
+markdown>=3.5
+Jinja2>=3.1.0
