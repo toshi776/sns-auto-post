@@ -38,9 +38,8 @@ wheels/
 Thumbs.db
 Desktop.ini
 
-# ログ
+# ログファイル（logsディレクトリは除外しない）
 *.log
-logs/
 log/
 
 # テスト
