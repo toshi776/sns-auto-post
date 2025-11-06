@@ -1,3 +1,32 @@
 [X]
-X投稿のみのテストです。
-Noteセクションは省略しています。
+新環境（WSL2）でのGAS開発環境を完全復旧しました！🚀
+clasp login の認証エラー（OAuth同意画面・スコープ不足など）を一通り解決。
+
+開発したもの
+・Google Apps Script自動デプロイスクリプト（deploy.sh）修正版
+
+主な機能
+・clasp認証・デプロイ自動化
+・バージョン作成＆更新コマンド対応（v2系）
+・.clasp.json設定の最適化
+
+使用技術
+・Google Apps Script
+・clasp（v2.5.0）
+・Node.js
+・Bash（WSL2）
+
+開発経緯
+・11/5：独自OAuth認証で失敗
+・11/6：標準clasp loginで全スコープ認証に成功
+・deploy.sh修正版を適用し自動デプロイ復活🎉
+
+学び
+・カスタムOAuthはスコープ制限がある
+・.clasp.jsonは"."指定でないとpush不可
+・Apps Script APIとOAuth設定順序が超重要
+
+今後の展望
+・同様の環境構築を自動化スクリプト化して公開予定！
+
+#GAS #clasp #WSL2 #自動化 #IwaSys

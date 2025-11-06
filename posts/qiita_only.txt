@@ -1,73 +1,64 @@
 [Qiita Title]
-PythonとYAMLで作るLINE業務報告自動化システム
+WSL2環境でのclasp認証エラーを完全解決する手順【GASデプロイ】
 
 [Qiita Content]
-
 ## はじめに
-
-毎日の業務開始・終了をLINEで報告する作業を自動化するため、Pythonで「LINE業務報告自動化システム」を開発しました。
+GASをCLIで管理できる便利ツール「clasp」ですが、
+新環境で認証エラーが頻発。特にOAuth同意画面やスコープ不足で詰まることが多いです。
+今回はWSL2環境でのclasp認証～デプロイ成功までの完全手順を共有します。
 
 ## 実装内容
-
-* 絶対時刻指定による本番運用
-* 相対時刻指定によるテスト運用
-* 複数スケジュールパターンの管理
-* 日ごとの作業報告送信
-* 継続ループによる24時間稼働
+- GCPプロジェクト作成
+- Apps Script API有効化
+- OAuth同意画面設定
+- clasp再認証＋デプロイ確認
 
 ## 実装の詳細
+```bash
+# 1. GCPプロジェクト設定
+console.cloud.google.com → 新規作成 → projectId取得
 
-**使用技術・ライブラリ**
+# 2. GAS側設定
+プロジェクト設定 → GCPプロジェクト番号を入力
 
-* Python 3.11
-* pyautogui, pyperclip
-* YAML（設定管理）
+# 3. API有効化
+https://console.cloud.google.com/apis/library/script.googleapis.com
 
-**設定ファイル例（config.yaml）**
-
-```yaml
-schedule_patterns:
-  通常:
-    - time: "10:00"
-      message: "おはようございます。本日の業務を開始します。"
-    - time: "15:00"
-      message: "本日の業務を終了します。"
-      work_report: true
-
-daily_patterns:
-  "2025-10-26": "通常"
-
-work_reports:
-  "2025-10-26": "自動投稿システムの検証とドキュメント整備を実施"
+# 4. 認証
+clasp login
 ```
 
-**実行方法**
+### `.clasp.json`例
+```json
+{
+  "scriptId": "xxxx",
+  "projectId": "polynomial-net-477401-k0",
+  "rootDir": "."
+}
+```
 
+### deploy.sh（v2対応）
 ```bash
-python send_report.py
+clasp version "update"
+clasp deploy -i $ID -V $NUM -d "update"
 ```
 
 ## 苦労した点・工夫した点
-
-* 座標クリック方式は解像度依存が強く断念
-* クリップボード経由（Ctrl+V）＋Enterで安定稼働
-* Windowsタスクスケジューラではなく継続ループ方式に変更し、シンプル化
+- カスタムOAuthではスコープが限定され失敗
+- 標準`clasp login`で全スコープ取得できることを確認
+- GCPプロジェクトとApps Scriptの紐付け順序が重要
 
 ## 学び
-
-* 完璧を目指すより動くものを作ることの大切さ
-* 運用を意識した設計（設定再読み込み・重複防止）が重要
-* シンプルさが結果的に信頼性を高める
+- claspの標準認証が最も安全
+- OAuth設定で「テストユーザー追加」が必須
+- `.clasp.json`の構造を理解するとトラブルを避けられる
 
 ## 今後の展望
-
-* ログ出力、リトライ機能、祝日判定の追加
-* OpenAI APIなどと連携し、作業報告文をAI自動生成
+- 初期セットアップ自動化スクリプトを公開予定
 
 ## まとめ
-
-本システムは「毎日の定型作業を削減する」シンプルな自動化事例です。
-同じように定期的な報告業務を抱える人にとって参考になれば幸いです。
+認証問題は「順序」と「設定の整合性」で解決できる。
+GAS＋claspを使う方の参考になれば幸いです。
 
 [Qiita Tags]
-Python, YAML, 自動化, LINE
+clasp, GoogleAppsScript, WSL2, OAuth, 環境構築
