@@ -1,0 +1,239 @@
+[X]
+新環境（WSL2）でのGAS開発環境を完全復旧しました！🚀  
+`clasp login` の認証エラー（OAuth同意画面・スコープ不足など）を一通り解決。
+
+**開発したもの**
+- Google Apps Script自動デプロイスクリプト（deploy.sh）修正版
+
+**主な機能**
+- clasp認証・デプロイ自動化
+- バージョン作成＆更新コマンド対応（v2系）
+- `.clasp.json`設定の最適化
+
+**使用技術**
+- Google Apps Script  
+- clasp（v2.5.0）  
+- Node.js  
+- Bash（WSL2）
+
+**開発経緯**
+- 11/5：独自OAuth認証で失敗  
+- 11/6：標準`clasp login`で全スコープ認証に成功  
+- deploy.sh修正版を適用し自動デプロイ復活🎉
+
+**学び**
+- カスタムOAuthはスコープ制限がある  
+- `.clasp.json`は`"."`指定でないとpush不可  
+- Apps Script APIとOAuth設定順序が超重要  
+
+**今後の展望**
+- 同様の環境構築を自動化スクリプト化して公開予定！
+
+#GAS #clasp #WSL2 #自動化 #IwaSys  
+
+
+[Note Title]
+clasp認証トラブルを完全解決！WSL2環境でのGASデプロイ再構築メモ
+
+[Note Content]
+## 背景  
+新しいノートPC（WSL2）に移行したところ、`clasp`の認証情報がなくGASへデプロイ不可に。  
+OAuth同意画面やスコープ設定で何度も失敗したが、最終的に「標準login」で全スコープ取得に成功。
+
+## 開発したシステムの概要  
+- **主な機能**
+  - clasp認証の再設定
+  - deploy.shスクリプトのv2対応
+  - `.clasp.json`修正によるpush成功
+
+- **使い方**
+  ```bash
+  clasp login
+  clasp push --force
+  ./deploy.sh
+  ```
+
+## 技術スタック  
+- Google Apps Script  
+- Node.js  
+- clasp（v2.5.0）  
+- WSL2 + Ubuntu環境  
+
+## 開発経緯と工夫  
+- カスタムOAuthで失敗し、スコープ制限を確認  
+- GCPプロジェクトを再作成しApps Script APIを有効化  
+- テストユーザー追加→標準loginで成功！  
+- deploy.shをv2系コマンドへ更新
+
+## 学び  
+- claspは標準loginが最も安定  
+- OAuth同意画面設定は「テストユーザー」追加が必須  
+- `.clasp.json`の`rootDir`は`.`指定が必要  
+
+## 今後の展望  
+- 初期セットアップ自動化スクリプトを整備予定  
+
+## まとめ  
+clasp認証の流れを体系的に理解できた。  
+今後は同様の環境構築を自動化し、他開発者にも共有したい。  
+💡「スキ」＆フォローお待ちしています！  
+
+
+[Qiita Title]
+WSL2環境でのclasp認証エラーを完全解決する手順【GASデプロイ】
+
+[Qiita Content]
+## はじめに
+GASをCLIで管理できる便利ツール「clasp」ですが、  
+新環境で認証エラーが頻発。特にOAuth同意画面やスコープ不足で詰まることが多いです。  
+今回はWSL2環境でのclasp認証～デプロイ成功までの完全手順を共有します。
+
+## 実装内容
+- GCPプロジェクト作成  
+- Apps Script API有効化  
+- OAuth同意画面設定  
+- clasp再認証＋デプロイ確認  
+
+## 実装の詳細
+```bash
+# 1. GCPプロジェクト設定
+console.cloud.google.com → 新規作成 → projectId取得
+
+# 2. GAS側設定
+プロジェクト設定 → GCPプロジェクト番号を入力
+
+# 3. API有効化
+https://console.cloud.google.com/apis/library/script.googleapis.com
+
+# 4. 認証
+clasp login
+```
+
+### `.clasp.json`例
+```json
+{
+  "scriptId": "xxxx",
+  "projectId": "polynomial-net-477401-k0",
+  "rootDir": "."
+}
+```
+
+### deploy.sh（v2対応）
+```bash
+clasp version "update"
+clasp deploy -i $ID -V $NUM -d "update"
+```
+
+## 苦労した点・工夫した点
+- カスタムOAuthではスコープが限定され失敗  
+- 標準`clasp login`で全スコープ取得できることを確認  
+- GCPプロジェクトとApps Scriptの紐付け順序が重要  
+
+## 学び
+- claspの標準認証が最も安全  
+- OAuth設定で「テストユーザー追加」が必須  
+- `.clasp.json`の構造を理解するとトラブルを避けられる  
+
+## 今後の展望
+- 初期セットアップ自動化スクリプトを公開予定  
+
+## まとめ
+認証問題は「順序」と「設定の整合性」で解決できる。  
+GAS＋claspを使う方の参考になれば幸いです。  
+
+
+[Zenn Title]
+【完全版】WSL2でのclasp認証＆GASデプロイエラー解決ガイド
+
+[Zenn Content]
+## はじめに
+Google Apps ScriptをCLI管理できる`clasp`。  
+しかし、WSL2などの新環境では認証が通らず苦戦することがあります。  
+本記事では、clasp認証を完全に通し、デプロイまで成功させる手順を整理しました。
+
+## 実装内容
+- GCPプロジェクトの再作成  
+- OAuth同意画面設定  
+- Apps Script API有効化  
+- `.clasp.json`設定修正  
+- deploy.sh更新  
+
+## 実装の詳細
+```bash
+# 新規プロジェクト作成
+gcloud projects create yukyu-kanri
+# API有効化
+gcloud services enable script.googleapis.com
+# 認証
+clasp login
+```
+
+```json
+{
+  "scriptId": "xxxx",
+  "projectId": "polynomial-net-477401-k0",
+  "rootDir": "."
+}
+```
+
+## 苦労した点・工夫した点
+- カスタムOAuthではスコープ不足で403エラー  
+- 標準loginは全スコープ認可で安定  
+- deploy.shをv2仕様に対応  
+
+## 学び
+- `rootDir`を明示的に指定する  
+- Apps Script APIを忘れず有効化  
+- OAuth同意画面は「テストユーザー」設定を先に  
+
+## 今後の展望
+- セットアップ自動化スクリプトをOSSとして公開予定  
+
+## まとめ
+clasp認証は手順通り進めれば確実に成功する。  
+この記事が環境移行時のトラブル解決の一助になれば幸いです。  
+
+
+[Blog Title]
+WSL2環境でのGASデプロイを再構築｜clasp認証問題を完全解決【IwaSys開発事例】
+
+[Blog Content]
+## 背景・目的
+新しい開発マシンへの移行に伴い、Google Apps ScriptのCLIツール「clasp」で認証エラーが発生。  
+OAuth同意画面やスコープ不足によりデプロイ不能となっていました。  
+本稿では、その解決過程と学びを紹介します。
+
+## 開発内容・システム概要
+- **開発したもの**：GAS自動デプロイスクリプト修正版  
+- **主な機能**
+  - clasp認証再構築
+  - バージョン自動作成・更新
+  - `.clasp.json`構成見直し  
+- **対象ユーザー**：GAS開発者・DX支援システム開発者  
+- **導入効果**：開発環境の再構築を自動化し、デプロイ作業を再現性高く実行可能に
+
+## 使用技術・開発環境
+- Google Apps Script  
+- clasp v2.5.0  
+- Node.js  
+- Bash（WSL2）  
+
+## 開発の過程・工夫した点
+- カスタムOAuthで失敗 → 標準loginで成功  
+- GCPプロジェクト再作成＋Apps Script API有効化  
+- deploy.shを最新版仕様に修正  
+
+## 成果と効果
+- clasp認証完全復旧  
+- バージョン8デプロイ成功  
+- 開発環境移行の再現性確保  
+
+## 今後の展望
+- clasp環境セットアップを自動化し、他開発者への共有を進める予定  
+
+## まとめ
+claspの認証構造とGCP設定の理解が、環境トラブル解決の鍵でした。  
+IwaSysでは今後も、DX支援・業務自動化分野で実践的な技術知見を発信していきます。  
+
+---
+**執筆：IwaSys 岩﨑俊宏**
