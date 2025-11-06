@@ -133,6 +133,50 @@ class GeminiFormatter:
         except Exception as e:
             raise Exception(f"Note用整形に失敗: {e}")
 
+    def generate_qiita_tags(self, title: str, content: str) -> list:
+        """
+        Qiita記事の内容からタグを自動生成
+
+        Args:
+            title: 記事のタイトル
+            content: 記事の本文
+
+        Returns:
+            list: タグのリスト（最大5個）
+        """
+        prompt = f"""以下のQiita記事のタイトルと本文から、適切なタグを最大5個生成してください。
+
+【重要な要件】
+1. タグは技術的なキーワードを選択
+2. Qiitaで実際に使われている一般的なタグ名を使用
+3. 具体的な技術名、ツール名、言語名を優先
+4. 最大5個まで
+5. タグのみをカンマ区切りで出力（説明文は不要）
+6. 英語のタグは小文字で統一
+
+タイトル:
+{title}
+
+本文:
+{content[:1000]}
+
+タグ（カンマ区切りで出力）:"""
+
+        try:
+            response = self.model.generate_content(prompt)
+            tags_text = response.text.strip()
+
+            # カンマ区切りで分割してリストに変換
+            tags = [tag.strip() for tag in tags_text.split(',') if tag.strip()]
+
+            # 最大5個に制限
+            if len(tags) > 5:
+                tags = tags[:5]
+
+            return tags
+        except Exception as e:
+            raise Exception(f"Qiitaタグ生成に失敗: {e}")
+
     def format_all(self, x_text: Optional[str] = None,
                    note_title: Optional[str] = None,
                    note_content: Optional[str] = None) -> dict:

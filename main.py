@@ -230,7 +230,7 @@ def post_to_all_platforms(
     zenn_published: bool = True,
     zenn_type: str = "tech",
     zenn_slug: str = None,
-    zenn_use_github: bool = False,
+    zenn_use_github: bool = True,
     blog_title: str = None,
     blog_content: str = None,
     blog_status: str = "publish",
@@ -351,6 +351,18 @@ def post_to_all_platforms(
         print("📚 Qiita に投稿中...")
         print("=" * 80)
         try:
+            # タグが指定されていない場合、Gemini APIで自動生成
+            if not qiita_tags or len(qiita_tags) == 0:
+                print("🤖 Qiitaタグが指定されていないため、Gemini APIで自動生成します...")
+                try:
+                    formatter = GeminiFormatter()
+                    qiita_tags = formatter.generate_qiita_tags(qiita_title, qiita_content)
+                    print(f"✅ 自動生成されたタグ: {', '.join(qiita_tags)}")
+                except Exception as e:
+                    print(f"⚠️  タグの自動生成に失敗: {e}")
+                    print("   タグなしで投稿を試みます...")
+                    qiita_tags = []
+
             qiita_result = post_to_qiita(
                 title=qiita_title,
                 content=qiita_content,
@@ -881,7 +893,7 @@ def main():
             zenn_published=not args.zenn_draft if hasattr(args, 'zenn_draft') else True,
             zenn_type=args.zenn_type if hasattr(args, 'zenn_type') else 'tech',
             zenn_slug=args.zenn_slug if hasattr(args, 'zenn_slug') else None,
-            zenn_use_github=args.zenn_github if hasattr(args, 'zenn_github') else False,
+            zenn_use_github=args.zenn_github if hasattr(args, 'zenn_github') else True,
             blog_title=blog_title,
             blog_content=blog_content,
             blog_status=args.blog_status if hasattr(args, 'blog_status') else 'publish',
