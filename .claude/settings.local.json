@@ -45,7 +45,8 @@
       "Bash(git remote add:*)",
       "Bash(git branch:*)",
       "Bash(git merge:*)",
-      "Bash(cmd /c \"python main.py --post-file posts/zenn_test.txt --zenn-github --dry-run\")"
+      "Bash(cmd /c \"python main.py --post-file posts/zenn_test.txt --zenn-github --dry-run\")",
+      "Bash(git stash:*)"
     ],
     "deny": [],
     "ask": []
